@@ -1,13 +1,19 @@
 import pygame, sys, time
 from pygame.locals import *
 
-pygame.init()
+import window
 
-Board = [[]]
-Board2 = [[]]
+# global constants
+FPS = 144
 GRIDSIZE = 10
 
+# global variables
+Board = [[]]
+Board2 = [[]]
+shutdown = False
+
 def draw(): #called when screen needs to be updated
+    screen = pygame.display.get_surface()
     pygame.display.flip()
     
     # draw the board
@@ -19,11 +25,6 @@ def draw(): #called when screen needs to be updated
         else:
           # draw filled square
           pygame.draw.rect(screen, (0,0,0), (i*GRIDSIZE,j*GRIDSIZE,GRIDSIZE,GRIDSIZE))
-    
-def wresize(): #screen is resized, recalculate some variables
-    global cxpos,cypos
-    cxpos = int(screen.get_width()/2)
-    cypos = int(screen.get_height()/2)
 
 def resetFlags(): #new flags set
     if fscreen:
@@ -76,51 +77,32 @@ def updateCell(x, y):
   else:
     Board2[i][j] = Board[i][j]
     
-if __name__ == "__main__":
-    #gets monitor info, used when resizing
-    wInfo = pygame.display.Info()
-
-    #variables
-    shutdown = False
-    windowWidth = 1024
-    windowHeight = 576
-    flags = 0
-    #menu variables
-    fscreen = False #fullscreen
-    bwindow = False #borderless
-    RATIOS = ["16:9","16:10","4:3"] #ratios
-    RESS = [[],[],[]] #holds various resolution options
-    RES169 = [[1024,576],[1152,648],[1280,720],[1366,768],[1600,900],[1920,1080]]
-    RES1610 = [[1280,800],[1440,900],[1680,1050]]
-    RES43 = [[960,720],[1024,768],[1280,960],[1400,1050],[1440,1080],[1600,1200],[1856,1392]]
-    RESS[0] = RES169
-    RESS[1] = RES1610
-    RESS[2] = RES43
-
-    #init screen
-    screen = pygame.display.set_mode((windowWidth, windowHeight),flags)
-    cxpos = int(screen.get_width()/2)
-    cypos = int(screen.get_height()/2)
-    screen.fill(Color(255,255,255))
+def listenOnEvents():
+  global shutdown
+  for event in pygame.event.get(): #runs when an event occurs
+    if event.type == QUIT: #quit called
+        shutdown = True #end loop
     
+if __name__ == "__main__":
+    pygame.init()
+    window.init()    
     clock = pygame.time.Clock()
 
     #main game loop
-    while (not shutdown):        
-        for event in pygame.event.get(): #runs when an event occurs
-            if event.type == QUIT: #quit called
-                shutdown = True #end loop
-                
+    while (not shutdown):    
         # init the boards
-        boardw = 100;
-        boardh = 50;
+        res = window.getResolution()
+        boardw = int(res[0] / GRIDSIZE)
+        boardh = int(res[1] / GRIDSIZE)
         Board = [[0 for x in range(boardh)] for y in range(boardw)]
         Board2 = [[0 for x in range(boardh)] for y in range(boardw)]
         
         updated = True
         # only keep drawing the board if the state changes
         while (updated): 
-          draw()     
+          listenOnEvents()
+          draw() 
+          clock.tick(FPS) #update x times a second, determines FPS    
         
           updated = updateBoard()
           if (updated):
@@ -129,8 +111,5 @@ if __name__ == "__main__":
             print("FALSE")
           copyBoard()
 
-          clock.tick(144) #update x times a second, determines FPS
-        shutdown = True
-
     #main loop ends, exit
-    pygame.quit()    
+    pygame.quit()
