@@ -6,16 +6,18 @@ import window
 # global constants
 FPS = 144
 GRIDSIZE = 10
+ROUNDTIME = 0.2
 
 # global variables
 Board = [[]]
 Board2 = [[]]
 shutdown = False
+paused = True
 
 def draw(): #called when screen needs to be updated
     screen = pygame.display.get_surface()
-    pygame.display.flip()
     
+    screen.fill((255,255,255))
     # draw the board
     for i in range(0, len(Board)):
       for j in range(0, len(Board[i])):
@@ -25,23 +27,7 @@ def draw(): #called when screen needs to be updated
         else:
           # draw filled square
           pygame.draw.rect(screen, (0,0,0), (i*GRIDSIZE,j*GRIDSIZE,GRIDSIZE,GRIDSIZE))
-
-def resetFlags(): #new flags set
-    if fscreen:
-        w = wInfo.current_w
-        h = wInfo.current_h
-        if bwindow:
-            flags = FULLSCREEN|NOFRAME
-        else:
-            flags = FULLSCREEN
-    else:
-        w = windowWidth
-        h = windowHeight
-        if bwindow:
-            flags = NOFRAME
-        else:
-            flags = 0
-    pygame.display.set_mode((w,h),flags)
+    pygame.display.flip()
     
 def copyBoard():
   for i in range(0, len(Board)):
@@ -53,7 +39,7 @@ def updateBoard():
   for i in range(0, len(Board)):
     for j in range(0, len(Board[i])):
       updateCell(i,j)
-      updated = (Board[i][j] != Board2[i][j])
+      updated = updated or (Board[i][j] != Board2[i][j])
   return updated
     
 def updateCell(x, y):
@@ -63,7 +49,7 @@ def updateCell(x, y):
   for i in range(-1, 2):
     for j in range(-1, 2):
       # ignore the centre square (that's us!)
-      if (i != 0 and j != 0):
+      if (i != 0 or j != 0):
         try:
           total += Board[x+i][y+j]
           continue
@@ -71,17 +57,29 @@ def updateCell(x, y):
           continue
         
   if (total < 2 or total > 3):
-    Board2[i][j] = 0
+    Board2[x][y] = 0
   elif (total == 3):
-    Board2[i][j] = 1
+    Board2[x][y] = 1
   else:
-    Board2[i][j] = Board[i][j]
+    Board2[x][y] = Board[x][y]
+    
+def changeLifeOnClick():
+  x = pygame.mouse.get_pos()[0]
+  x = int(x/10)
+  y = pygame.mouse.get_pos()[1]
+  y = int(y/10)
+  Board[x][y] = (Board[x][y] + 1) % 2
     
 def listenOnEvents():
-  global shutdown
+  global shutdown, paused
   for event in pygame.event.get(): #runs when an event occurs
     if event.type == QUIT: #quit called
         shutdown = True #end loop
+    elif event.type == MOUSEBUTTONDOWN: #mouse clicked
+        changeLifeOnClick()
+    elif event.type == KEYDOWN: #key has been pressed
+      if pygame.key.get_pressed()[pygame.K_SPACE]:
+        paused = not paused
     
 if __name__ == "__main__":
     pygame.init()
@@ -98,18 +96,21 @@ if __name__ == "__main__":
         Board2 = [[0 for x in range(boardh)] for y in range(boardw)]
         
         updated = True
+        waitCount = 0
         # only keep drawing the board if the state changes
-        while (updated): 
+        while (updated and not shutdown): 
           listenOnEvents()
           draw() 
           clock.tick(FPS) #update x times a second, determines FPS    
         
-          updated = updateBoard()
-          if (updated):
-            print("TRUE")
-          else:
-            print("FALSE")
-          copyBoard()
+          if (not paused):          
+            if (waitCount >= FPS*ROUNDTIME):      
+              waitCount = 0
+              updated = updateBoard()
+              copyBoard()
+            waitCount += 1
+            
+        shutdown = True
 
     #main loop ends, exit
     pygame.quit()

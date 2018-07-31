@@ -44,7 +44,7 @@ def init():
   fscreen = False # fullscreen
   bwindow = False # borderless
   ratind = 0 # index of the ratio menu
-  resind = 0 # index of the resolution menu
+  resind = 2 # index of the resolution menu
   # ratios and resolutions can be found in constants
   windowWidth = RESS[ratind][resind][0]
   windowHeight = RESS[ratind][resind][1]
