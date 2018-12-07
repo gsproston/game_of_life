@@ -4,7 +4,7 @@ from pygame.locals import *
 import window
 
 # global constants
-FPS = 144
+FPS = 30
 GRIDSIZE = 10
 ROUNDTIME = 0.2
 
@@ -14,9 +14,9 @@ Board2 = [[]]
 shutdown = False
 paused = True
 
-def draw(): #called when screen needs to be updated
-    screen = pygame.display.get_surface()
-    
+#called when screen needs to be updated
+def draw(): 
+    screen = pygame.display.get_surface()    
     screen.fill((255,255,255))
     # draw the board
     for i in range(0, len(Board)):
@@ -28,6 +28,20 @@ def draw(): #called when screen needs to be updated
           # draw filled square
           pygame.draw.rect(screen, (0,0,0), (i*GRIDSIZE,j*GRIDSIZE,GRIDSIZE,GRIDSIZE))
     pygame.display.flip()
+    
+# draws the rect and then only updates that area of the screen
+def drawCell(x, y, live):
+  screen = pygame.display.get_surface()   
+  rectCell = pygame.Rect(x*GRIDSIZE,y*GRIDSIZE,GRIDSIZE,GRIDSIZE)
+  # draw 
+  if (not live):
+    # draw empty square
+    pygame.draw.rect(screen, (0,0,0), rectCell, 1)
+  else:
+    # draw filled square
+    pygame.draw.rect(screen, (0,0,0), rectCell)
+  # update only that portion of the screen
+  pygame.display.update(rectCell)
     
 def copyBoard():
   for i in range(0, len(Board)):
@@ -69,6 +83,7 @@ def changeLifeOnClick():
   y = pygame.mouse.get_pos()[1]
   y = int(y/10)
   Board[x][y] = (Board[x][y] + 1) % 2
+  drawCell(x, y, Board[x][y] == 1)
     
 def listenOnEvents():
   global shutdown, paused
@@ -80,6 +95,8 @@ def listenOnEvents():
     elif event.type == KEYDOWN: #key has been pressed
       if pygame.key.get_pressed()[pygame.K_SPACE]:
         paused = not paused
+      elif pygame.key.get_pressed()[pygame.K_ESCAPE]:
+        shutdown = True
     
 if __name__ == "__main__":
     pygame.init()
@@ -94,17 +111,19 @@ if __name__ == "__main__":
         boardh = int(res[1] / GRIDSIZE)
         Board = [[0 for x in range(boardh)] for y in range(boardw)]
         Board2 = [[0 for x in range(boardh)] for y in range(boardw)]
+		# draw the board for the first time
+        draw()
         
         updated = True
         waitCount = 0
         # only keep drawing the board if the state changes
-        while (updated and not shutdown): 
+        while (not shutdown): 
           listenOnEvents()
-          draw() 
           clock.tick(FPS) #update x times a second, determines FPS    
         
           if (not paused):          
-            if (waitCount >= FPS*ROUNDTIME):      
+            if (waitCount >= FPS*ROUNDTIME):  
+              draw() 
               waitCount = 0
               updated = updateBoard()
               copyBoard()
