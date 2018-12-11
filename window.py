@@ -51,5 +51,5 @@ def init():
 
   # init screen
   screen = pygame.display.set_mode((windowWidth, windowHeight),flags)
-  pygame.display.set_caption("Snap")
+  pygame.display.set_caption("Game of Life")
   screen.fill(Color(255,255,255))
